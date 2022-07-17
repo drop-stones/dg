@@ -11,6 +11,9 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Enable clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 OPTION(LLVM_DG "Support for LLVM Dependency graph" ON)
 OPTION(ENABLE_CFG "Add support for CFG edges to the graph" ON)
 OPTION(NO_EXCEPTIONS "Compile with -fno-exceptions (ON by default)" ON)

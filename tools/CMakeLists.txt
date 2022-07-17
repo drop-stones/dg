@@ -145,6 +145,19 @@ endif (HAVE_SVF)
 	                                      PRIVATE ${llvm_analysis}
                                               PRIVATE ${llvm_irreader})
 
+	add_executable(defuse-dump defuse-dump.cpp)
+	target_link_libraries(defuse-dump PRIVATE
+		${llvm}
+		${llvm_irreader}
+		dgllvmslicer
+	)
+	if(HAVE_SVF)
+		target_link_libraries(defuse-dump PRIVATE
+			${SVF_LIBS}
+			${llvm_transformutils}
+		)
+	endif()
+
 	install(TARGETS llvm-slicer
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
