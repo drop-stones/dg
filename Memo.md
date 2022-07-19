@@ -41,3 +41,52 @@
   - `target`: 指し先オブジェクト
   - `offset`: 先頭からのオフセット
   - `len`: 長さ
+
+## 解析の流れ
+
+1. LLVMDependenceGraphBuilder::build()
+    1. SVFPointerAnalysis::run()
+        1. SVF::AndersenBase::analyze()
+  2. LLVMDataDependenceAnalysis::run(): 初期化のみ行い，On-demandで計算
+      1. buildGraph()
+          1. createDDA()
+          2. buildFromLLVM()
+          3. buildAllFuns()
+          4. buildSubgraph()
+          5. buildBBlock()
+          6. buildNode()
+          7. LLVMReadWriteGraphBuilder::createNode()
+              1. createStore
+              2. mapPointers
+                  1. SVFPointerAnalysis::getLLVMPointsToChecked()
+                  2. mapSVFPointsTo()
+                      1. class SvfLLVMPointsToSet
+                      2. class LLVMPointsToSet(LLVMPointsToImpl *impl = class SvfLLVMPointsToSet)
+                  3. LLVMPointsToSet::begin()
+                      1. SvfLLVMPointsToSet::get()
+                          - `return {_getValue(), Offset::UNKNOWN}`
+                  4. DefSite::DefSite(ptrNode, ptr.offset, size)
+                  5. return `std::vector<DefSite> result`
+      2. dda::DataDependenceAnalysis::run()
+      3. MemorySSATransformation::run()
+          1. MemorySSATransformation::initialize()
+          2. ReadWriteGraph::splitBBlocksOnCalls()
+  3. LLVMDependenceGraph::build()
+      1. addGlobals
+  4. LLVMDependenceGraph::addDefUseEdges()
+      1. DataFlowAnalysis::runOnBlock()
+      2. LLVMDefUseAnalysis::runOnNode()
+
+### 追加実装の方針
+
+- SVF &rarr; DGへの連携を利用する
+  - SVFPointerAnalysis, SvfLLVMPointsToSetなどを改造し，正しい`Offset`を求める
+    - SVFPointerAnalysis: SVFの関数を呼ぶwrapperクラス
+    - SvfLLVMPointsToSet: SVFのポインタ解析の結果から，LLVMPointerへの変換を担うクラス
+      - 現状，`Offset::UNKNOWN`のみを返すテキトー仕様
+    - LLVMReadWriteGraphBuilder::mapPointers(): LLVMPointerから，DefSiteを作成
+      - 現状，`Offset::UNKNOWN`の場合，`len = Offset::UNKNOWN`となってしまうため(l.120)，意味なし
+- DGによる解析後，DefUseエッジを削る
+  - LLVMDefUseAnalysisを改造し，不要なDefUseエッジを削る
+    - SVFPointerAnalysis::isAlias(): SVFのエイリアス判定
+    - 配列アクセスに関して，特別な対処が必要??
