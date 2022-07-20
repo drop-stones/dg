@@ -170,6 +170,13 @@ class SVFPointerAnalysis : public LLVMPointerAnalysis {
         DBG_SECTION_END(pta, "Done running SVF pointer analysis (Andersen)");
         return true;
     }
+
+    bool isAlias(const llvm::MemoryLocation &Lhs, const llvm::MemoryLocation &Rhs) {
+        return _pta->alias(Lhs, Rhs);
+    }
+    bool isAlias(const llvm::Value *Lhs, const llvm::Value *Rhs) {
+        return _pta->alias(Lhs, Rhs);
+    }
 };
 
 } // namespace dg

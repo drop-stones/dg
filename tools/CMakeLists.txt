@@ -28,6 +28,7 @@ if (LLVM_DG)
     endif()
 
 	add_library(dgllvmslicer SHARED
+	# add_library(dgllvmslicer STATIC
 		    llvm-slicer-metadata.cpp
 		    llvm-slicer-opts.cpp
 		    llvm-slicer-utils.cpp

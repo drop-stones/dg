@@ -14,6 +14,7 @@
 
 #include "dg/llvm/DataDependence/DataDependence.h"
 #include "dg/llvm/PointerAnalysis/PointerAnalysis.h"
+#include "dg/llvm/PointerAnalysis/SVFPointerAnalysis.h"
 
 #include "dg/llvm/LLVMDependenceGraph.h"
 #include "dg/llvm/LLVMNode.h"
@@ -58,6 +59,11 @@ LLVMDefUseAnalysis::LLVMDefUseAnalysis(LLVMDependenceGraph *dg,
           dg(dg), RD(rd), PTA(pta), DL(new DataLayout(dg->getModule())) {
     assert(PTA && "Need points-to information");
     assert(RD && "Need reaching definitions");
+/*
+    llvm::errs() << "LLVMDefUseAnalysis::" << __func__ << "\n";
+    llvm::errs() << "LLVMPointerAnalysisOptions: isFI = " << PTA->getOptions().isFI() << "\n";
+    llvm::errs() << "LLVMPointerAnalysisOptions: isSVF = " << PTA->getOptions().isSVF() << "\n";
+*/
 }
 
 void LLVMDefUseAnalysis::addDataDependencies(LLVMNode *node) {
@@ -66,6 +72,13 @@ void LLVMDefUseAnalysis::addDataDependencies(LLVMNode *node) {
     auto *val = node->getValue();
     auto defs = RD->getLLVMDefinitions(val);
 
+/*
+    llvm::errs() << "LLVMDefUseAnalysis::" << __func__ << "\n";
+    llvm::errs() << " - Use: " << *val << "\n";
+    auto *ReadNode = RD->getNode(val);
+    for (const auto &DefSite : ReadNode->getUses())
+        llvm::errs() << "   - Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: " << *RD->getValue(DefSite.target) << "\n";
+*/
     // add data dependence
     for (auto *def : defs) {
         LLVMNode *rdnode = dg->getNode(def);
@@ -89,6 +102,22 @@ void LLVMDefUseAnalysis::addDataDependencies(LLVMNode *node) {
             }
         }
 
+/*
+        llvm::errs() << " - Def: " << *rdnode->getValue() << "\n";
+        auto *WriteNode = RD->getNode(rdnode->getValue());
+        for (const auto &DefSite : WriteNode->getDefines())
+            llvm::errs() << "   - Defines: Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: " << *RD->getValue(DefSite.target) << "\n";
+        for (const auto &DefSite : WriteNode->getOverwrites())
+            llvm::errs() << "   - Overwrites: Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: " << *RD->getValue(DefSite.target) << "\n";
+        assert(PTA->getOptions().isSVF());
+        auto *SvfPTA = llvm::cast<SVFPointerAnalysis>(PTA);
+        if (llvm::isa<LoadInst>(val) && llvm::isa<StoreInst>(rdnode->getValue())) {
+            llvm::LoadInst *Load = llvm::cast<LoadInst>(val);
+            llvm::StoreInst *Store = llvm::cast<StoreInst>(rdnode->getValue());
+            if (SvfPTA->isAlias(Load->getPointerOperand(), Store->getPointerOperand()))
+                llvm::errs() << "   - SVF::isAlias = true\n";
+        }
+*/
         assert(rdnode);
         rdnode->addDataDependence(node);
     }
