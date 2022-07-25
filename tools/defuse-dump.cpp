@@ -10,6 +10,7 @@
 using namespace dg;
 
 void printUseDefFromDG(LLVMDependenceGraph *DG) {
+  llvm::errs() << __func__ << "\n";
   auto *DDA = DG->getDDA();
   for (const auto &FunIter : getConstructedFunctions()) {
     for (const auto &BBIter : FunIter.second->getBlocks()) {
@@ -18,15 +19,30 @@ void printUseDefFromDG(LLVMDependenceGraph *DG) {
         if (DDA->isUse(Val)) {
           llvm::errs() << "Use: " << *Val << "\n";
           auto *ReadNode = DDA->getNode(Val);
-          for (const auto &UseSite : ReadNode->getUses())
-            llvm::errs() << "   - Off: " << UseSite.offset.offset << ", Len: " << UseSite.len.offset << ", Val: " << *DDA->getValue(UseSite.target) << "\n";
+          for (const auto &UseSite : ReadNode->getUses()) {
+            llvm::errs() << "   - Off: " << UseSite.offset.offset << ", Len: " << UseSite.len.offset << ", Val: ";
+            if (DDA->getValue(UseSite.target) != nullptr)
+              llvm::errs() << *DDA->getValue(UseSite.target) << "\n";
+            else
+              llvm::errs() << "nullptr\n";
+          }
           for (const auto *Def : DDA->getLLVMDefinitions(Val)) {
             llvm::errs() << " - Def: " << *Def << "\n";
             auto *WriteNode = DDA->getNode(Def);
-            for (const auto &DefSite : WriteNode->getDefines())
-              llvm::errs() << "   - Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: " << *DDA->getValue(DefSite.target) << "\n";
-            for (const auto &DefSite : WriteNode->getOverwrites())
-              llvm::errs() << "   - Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: " << *DDA->getValue(DefSite.target) << "\n";
+            for (const auto &DefSite : WriteNode->getDefines()) {
+              llvm::errs() << "   - Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: ";
+              if (DDA->getValue(DefSite.target) != nullptr)
+                llvm::errs() << *DDA->getValue(DefSite.target) << "\n";
+              else
+                llvm::errs() << "nullptr\n";
+            }
+            for (const auto &DefSite : WriteNode->getOverwrites()) {
+              llvm::errs() << "   - Off: " << DefSite.offset.offset << ", Len: " << DefSite.len.offset << ", Val: ";
+              if (DDA->getValue(DefSite.target) != nullptr)
+                llvm::errs() << *DDA->getValue(DefSite.target) << "\n";
+              else
+                llvm::errs() << "nullptr\n";
+            }
           }
         }
       }
@@ -34,9 +50,22 @@ void printUseDefFromDG(LLVMDependenceGraph *DG) {
   }
 }
 
+void printGlobals(LLVMDependenceGraph *DG) {
+  llvm::errs() << __func__ << "\n";
+  auto *DDA = DG->getDDA();
+  auto *RWGraph = DDA->getGraph();
+  for (auto *Subgraph : RWGraph->subgraphs()) {
+    for (auto *BB : Subgraph->bblocks()) {
+      for (auto *Node : BB->getNodes()) {
+        llvm::errs() << (unsigned)Node->getType() << ": " << *DDA->getValue(Node) << "\n";
+      }
+    }
+  }
+}
+
 int main(int argc, char *argv[]) {
   SlicerOptions Opt = parseSlicerOptions(argc, argv);
-  Opt.dgOptions.PTAOptions.analysisType = LLVMPointerAnalysisOptions::AnalysisType::svf;  // Use SVF by default
+  // Opt.dgOptions.PTAOptions.analysisType = LLVMPointerAnalysisOptions::AnalysisType::svf;  // Use SVF by default
   llvm::LLVMContext Ctx;
   std::unique_ptr<llvm::Module> M = parseModule("defuse-dump", Ctx, Opt);
 

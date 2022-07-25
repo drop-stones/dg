@@ -90,3 +90,16 @@
   - LLVMDefUseAnalysisを改造し，不要なDefUseエッジを削る
     - SVFPointerAnalysis::isAlias(): SVFのエイリアス判定
     - 配列アクセスに関して，特別な対処が必要??
+
+### グローバル変数の初期化
+
+処理手順
+1. LLVMDataDependenceAnalysis::run() &rarr; buildGraph()
+2. LLVMReadWriteGraphBuilder::build()
+3. buildFromLLVM() &rarr; buildSubgraph() &rarr; buildBBlock()
+4. GraphBuilder::buildNode()
+5. LLVMReadWriteGraphBuilder::createNode()
+    - グローバル変数に対応するノードの処理
+6. DataDependenceAnalysis::run() &rarr; MemorySSATransformation::run() &rarr; initialization()
+7. MemorySSATransformation::computeAllDefinitions()
+8. MemorySSATransformation::findDefinitions(Use) &rarr; findDefinitionsInBlock()

@@ -367,7 +367,10 @@ NodesSeq<RWNode> LLVMReadWriteGraphBuilder::createNode(const llvm::Value *v) {
     using namespace llvm;
     if (isa<GlobalVariable>(v)) {
         // global variables are like allocations
-        return {&create(RWNodeType::GLOBAL)};
+        auto &GlobalNode = create(RWNodeType::GLOBAL);
+        DefSite Site{&GlobalNode};
+        GlobalNode.addDef(Site);
+        return {&GlobalNode};
     }
 
     const auto *I = dyn_cast<Instruction>(v);

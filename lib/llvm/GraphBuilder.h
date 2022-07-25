@@ -154,7 +154,14 @@ class GraphBuilder {
         while (!queue.empty()) {
             const auto *cur = queue.pop();
 
-            buildBBlock(*cur, subginfo);
+            auto &bblock = buildBBlock(*cur, subginfo);
+            if (F.getName() == "main" && cur->isEntryBlock()) {
+                llvm::errs() << "main::EntryBlock\n";
+                for (auto *global : _globals) {
+                    if (global->isDef())
+                        bblock.prepend(global);
+                }
+            }
 
             for (const auto *succ : successors(cur)) {
                 queue.push(succ);
