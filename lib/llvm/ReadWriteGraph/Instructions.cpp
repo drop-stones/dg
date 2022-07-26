@@ -13,6 +13,7 @@
 
 //#include "dg/llvm/PointerAnalysis/PointerGraph.h"
 //#include "llvm/ForkJoin/ForkJoin.h"
+#include "dg/ReadWriteGraph/DefSite.h"
 #include "dg/ReadWriteGraph/RWNode.h"
 #include "llvm/ReadWriteGraph/LLVMReadWriteGraphBuilder.h"
 #include "llvm/llvm-utils.h"
@@ -239,6 +240,8 @@ RWNode *LLVMReadWriteGraphBuilder::createLoad(const llvm::Instruction *Inst) {
 
     auto defSites = mapPointers(Inst, Inst->getOperand(0), size);
     for (const auto &ds : defSites) {
+        if (ds == UNKNOWN_MEMORY)
+            continue;
         node.addUse(ds);
     }
 
@@ -372,6 +375,18 @@ NodesSeq<RWNode> LLVMReadWriteGraphBuilder::createNode(const llvm::Value *v) {
         GlobalNode.addDef(Site);
         return {&GlobalNode};
     }
+/*
+    if (const auto *Arg = llvm::dyn_cast<const llvm::Argument>(v)) {
+        llvm::errs() << __func__ << ": found byval arg\n";
+        auto &ByValNode = create(RWNodeType::ALLOC);
+        for (const auto &Pts : PTA->getLLVMPointsTo(v)) {
+            RWNode *PtsNode = getNode(Pts.value);
+            DefSite Site{PtsNode, Pts.offset, PtsNode->getSize()};
+            ByValNode.addDef(Site, true);
+        }
+        return {&ByValNode};
+    }
+*/
 
     const auto *I = dyn_cast<Instruction>(v);
     if (!I)

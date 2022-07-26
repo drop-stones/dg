@@ -103,3 +103,9 @@
 6. DataDependenceAnalysis::run() &rarr; MemorySSATransformation::run() &rarr; initialization()
 7. MemorySSATransformation::computeAllDefinitions()
 8. MemorySSATransformation::findDefinitions(Use) &rarr; findDefinitionsInBlock()
+
+## 用語
+
+- LVN: Local value numbering
+  - 説明: 各命令の操作に対してuniqueなタグを付ける．
+  - 用途: 同一タグ(= 同じ操作)である冗長な命令を削除

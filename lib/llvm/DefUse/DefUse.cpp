@@ -73,9 +73,17 @@ void LLVMDefUseAnalysis::addDataDependencies(LLVMNode *node) {
         if (!rdnode) {
             // that means that the value is not from this graph.
             // We need to add interprocedural edge
+            llvm::Function *F = nullptr;
+            if (auto *Inst = llvm::dyn_cast<llvm::Instruction>(def)) {
+                F = Inst->getParent()->getParent();
+            } else if (auto *Arg = llvm::dyn_cast<llvm::Argument>(def)) {
+                F = Arg->getParent();
+            }
+/*
             llvm::Function *F = llvm::cast<llvm::Instruction>(def)
                                         ->getParent()
                                         ->getParent();
+*/
             LLVMNode *entryNode = dg->getGlobalNode(F);
             assert(entryNode && "Don't have built function");
 

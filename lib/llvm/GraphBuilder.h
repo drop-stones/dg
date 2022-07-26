@@ -162,6 +162,17 @@ class GraphBuilder {
                         bblock.prepend(global);
                 }
             }
+/*
+            else if (cur->isEntryBlock()) {
+                for (const auto &Arg : F.args()) {
+                    if (Arg.hasAttribute(Attribute::ByVal)) {
+                        llvm::errs() << F.getName() << "::" << Arg << " has byval\n";
+                        NodeT *byval = buildNode(&Arg).getRepresentant();
+                        bblock.prepend(byval);
+                    }
+                }
+            }
+*/
 
             for (const auto *succ : successors(cur)) {
                 queue.push(succ);
